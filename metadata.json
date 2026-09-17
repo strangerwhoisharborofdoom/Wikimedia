@@ -1,0 +1,6 @@
+{
+  "name": "WikiFact Lens",
+  "description": "An evidence-comparison research tool that identifies and reviews possible mismatches between structured Wikipedia infobox data and article text.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

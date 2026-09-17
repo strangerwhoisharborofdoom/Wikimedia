@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1c1917"/>
+      <stop offset="100%" stop-color="#292524"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <!-- Rounded Base Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="24" y="24" width="464" height="464" rx="92" fill="none" stroke="#44403c" stroke-width="4" stroke-opacity="0.5"/>
+  
+  <!-- Outer Magnifying Lens Ring -->
+  <g filter="url(#shadow)">
+    <circle cx="236" cy="236" r="140" fill="#292524" stroke="url(#accent)" stroke-width="16"/>
+    <!-- Glass subtle inner glow -->
+    <circle cx="236" cy="236" r="130" fill="#1c1917" fill-opacity="0.85"/>
+  </g>
+  
+  <!-- Lens Handle -->
+  <path d="M338 338 L428 428" stroke="url(#accent)" stroke-width="26" stroke-linecap="round"/>
+  <path d="M344 344 L422 422" stroke="#1c1917" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- Iconic Wikipedia 'W' stylized inside lens -->
+  <g fill="#fafaf9" font-family="'Cinzel', 'Times New Roman', serif" font-weight="900" font-size="148" text-anchor="middle">
+    <text x="236" y="290">W</text>
+  </g>
+
+  <!-- Evidence check / scale mark -->
+  <circle cx="236" cy="142" r="10" fill="#f59e0b"/>
+</svg>
