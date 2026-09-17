@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ComparisonReport } from '../types/index.js';
 import { StatusBadge, ReviewBadge } from '../components/StatusBadge.js';
+import { apiClient } from '../services/apiClient.js';
+import { clientDataService } from '../services/clientDataService.js';
 import {
   FileText,
   Printer,
@@ -25,36 +27,51 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({
 }) => {
   const [report, setReport] = useState<ComparisonReport | null>(null);
   const [loading, setLoading] = useState(false);
-  const [articlesList, setArticlesList] = useState<any[]>([]);
+  const [articlesList, setArticlesList] = useState<any[]>(() => clientDataService.searchArticles(''));
 
   // Load available articles list
   useEffect(() => {
-    fetch('/api/articles/search?q=')
-      .then(res => res.json())
-      .then(data => {
-        setArticlesList(data.articles || []);
-        if (!articleId && data.articles?.length > 0) {
-          onSelectArticle(data.articles[0].identifier);
+    let isCancelled = false;
+    apiClient.searchArticles('')
+      .then(list => {
+        if (!isCancelled && list) {
+          setArticlesList(list);
+          if (!articleId && list.length > 0) {
+            onSelectArticle(list[0].identifier);
+          }
         }
       })
       .catch(err => console.error('Failed to load articles list for reports:', err));
+    return () => { isCancelled = true; };
   }, []);
 
   // Fetch report for selected article
   useEffect(() => {
     if (!articleId) return;
 
+    // Instant local fallback
+    const localReport = clientDataService.getReport(articleId);
+    if (localReport) {
+      setReport(localReport);
+    }
+
     setLoading(true);
-    fetch(`/api/reports/${articleId}`)
-      .then(res => res.json())
+    let isCancelled = false;
+
+    apiClient.getReport(articleId)
       .then(data => {
-        setReport(data);
-        setLoading(false);
+        if (!isCancelled && data) {
+          setReport(data);
+        }
       })
       .catch(err => {
         console.error('Failed to load report:', err);
-        setLoading(false);
+      })
+      .finally(() => {
+        if (!isCancelled) setLoading(false);
       });
+
+    return () => { isCancelled = true; };
   }, [articleId]);
 
   const handlePrint = () => {

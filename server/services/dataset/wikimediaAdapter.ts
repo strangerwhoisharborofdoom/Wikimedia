@@ -12,6 +12,7 @@ import {
   cleanText,
   classifyFieldCategory
 } from '../normalization/normalizer.js';
+import { WIKIMEDIA_DATASET } from '../../../src/data/wikimediaDataset.js';
 
 export class WikimediaDatasetAdapter {
   private articles: Map<string, RawWikimediaArticle> = new Map();
@@ -34,10 +35,21 @@ export class WikimediaDatasetAdapter {
         }
         console.log(`[WikimediaDatasetAdapter] Loaded ${rawArticles.length} authentic articles from ${this.dataFilePath}`);
       } else {
-        console.warn(`[WikimediaDatasetAdapter] Dataset file not found at ${this.dataFilePath}`);
+        console.warn(`[WikimediaDatasetAdapter] Dataset file not found at ${this.dataFilePath}, falling back to bundled dataset`);
+        this.articles.clear();
+        for (const art of WIKIMEDIA_DATASET) {
+          this.articles.set(String(art.identifier), art);
+          this.articles.set(art.name.toLowerCase(), art);
+        }
+        console.log(`[WikimediaDatasetAdapter] Loaded ${WIKIMEDIA_DATASET.length} bundled authentic articles`);
       }
     } catch (err) {
-      console.error('[WikimediaDatasetAdapter] Error loading dataset:', err);
+      console.error('[WikimediaDatasetAdapter] Error loading dataset, using bundled dataset:', err);
+      this.articles.clear();
+      for (const art of WIKIMEDIA_DATASET) {
+        this.articles.set(String(art.identifier), art);
+        this.articles.set(art.name.toLowerCase(), art);
+      }
     }
   }
 

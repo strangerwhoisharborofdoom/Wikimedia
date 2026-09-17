@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Upload, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
+import { apiClient } from '../services/apiClient.js';
 
 interface DatasetImportModalProps {
   isOpen: boolean;
@@ -41,24 +42,15 @@ export const DatasetImportModal: React.FC<DatasetImportModalProps> = ({
       const parsed = JSON.parse(jsonInput);
       setLoading(true);
 
-      const res = await fetch('/api/articles/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(parsed)
-      });
+      const res = await apiClient.importArticle(parsed);
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to import article');
-      }
-
-      setStatusMessage({ type: 'success', text: data.message });
+      setStatusMessage({ type: 'success', text: res.message });
       setTimeout(() => {
         onSuccess();
         onClose();
       }, 1200);
     } catch (err: any) {
-      setStatusMessage({ type: 'error', text: err.message });
+      setStatusMessage({ type: 'error', text: err.message || 'Failed to import article' });
     } finally {
       setLoading(false);
     }

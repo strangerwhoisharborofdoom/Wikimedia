@@ -1,6 +1,7 @@
 import React from 'react';
 import { DashboardStats, ComparisonResult } from '../types/index.js';
 import { StatusBadge, ReviewBadge } from '../components/StatusBadge.js';
+import { clientDataService } from '../services/clientDataService.js';
 import {
   FileText,
   Scale,
@@ -29,31 +30,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onSelectFact,
   onNavigateToTab
 }) => {
-  if (loading || !stats) {
-    return (
-      <div className="p-8 max-w-7xl mx-auto space-y-6 animate-pulse">
-        <div className="h-8 bg-stone-200 rounded w-64" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-24 bg-stone-200 rounded-xl" />
-          ))}
-        </div>
-        <div className="h-72 bg-stone-200 rounded-xl" />
-      </div>
-    );
-  }
+  // Use provided stats or fallback to instant client-side data service so it is never stuck on skeleton
+  const currentStats = stats || clientDataService.getDashboardStats();
 
-  const matchPercent = stats.factsCompared > 0
-    ? Math.round((stats.matches / stats.factsCompared) * 100)
+  const matchPercent = currentStats.factsCompared > 0
+    ? Math.round((currentStats.matches / currentStats.factsCompared) * 100)
     : 0;
-  const mismatchPercent = stats.factsCompared > 0
-    ? Math.round((stats.possibleMismatches / stats.factsCompared) * 100)
+  const mismatchPercent = currentStats.factsCompared > 0
+    ? Math.round((currentStats.possibleMismatches / currentStats.factsCompared) * 100)
     : 0;
-  const reviewPercent = stats.factsCompared > 0
-    ? Math.round((stats.reviewRequired / stats.factsCompared) * 100)
+  const reviewPercent = currentStats.factsCompared > 0
+    ? Math.round((currentStats.reviewRequired / currentStats.factsCompared) * 100)
     : 0;
-  const insufficientPercent = stats.factsCompared > 0
-    ? Math.round((stats.insufficientEvidence / stats.factsCompared) * 100)
+  const insufficientPercent = currentStats.factsCompared > 0
+    ? Math.round((currentStats.insufficientEvidence / currentStats.factsCompared) * 100)
     : 0;
 
   return (
@@ -85,7 +75,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             className="px-3.5 py-2 text-xs font-medium text-white bg-stone-900 rounded-lg hover:bg-stone-800 transition-colors shadow-xs inline-flex items-center gap-1.5 min-h-[38px]"
           >
             <Clock className="w-3.5 h-3.5" />
-            <span>Review Queue ({stats.possibleMismatches + stats.reviewRequired})</span>
+            <span>Review Queue ({currentStats.possibleMismatches + currentStats.reviewRequired})</span>
           </button>
         </div>
       </div>
@@ -113,7 +103,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <BookOpen className="w-4 h-4 text-stone-400" />
           </div>
           <div className="text-2xl font-serif font-bold text-stone-900">
-            {stats.articlesAnalyzed}
+            {currentStats.articlesAnalyzed}
           </div>
           <div className="text-[11px] text-stone-500 mt-1">
             Wikimedia Enterprise records
@@ -126,10 +116,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <Scale className="w-4 h-4 text-stone-400" />
           </div>
           <div className="text-2xl font-serif font-bold text-stone-900">
-            {stats.factsCompared}
+            {currentStats.factsCompared}
           </div>
           <div className="text-[11px] text-emerald-700 font-medium mt-1">
-            {stats.matches} consistent ({matchPercent}%)
+            {currentStats.matches} consistent ({matchPercent}%)
           </div>
         </div>
 
@@ -139,7 +129,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <AlertTriangle className="w-4 h-4 text-amber-600" />
           </div>
           <div className="text-2xl font-serif font-bold text-amber-950">
-            {stats.possibleMismatches}
+            {currentStats.possibleMismatches}
           </div>
           <div className="text-[11px] text-amber-800 mt-1">
             Flagged for auditor review ({mismatchPercent}%)
@@ -152,7 +142,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-serif font-bold text-stone-900">
-            {stats.humanReviewsCompleted}
+            {currentStats.humanReviewsCompleted}
           </div>
           <div className="text-[11px] text-stone-500 mt-1">
             Auditor decisions recorded
@@ -164,7 +154,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       <div className="p-5 rounded-xl bg-white border border-stone-200 shadow-2xs space-y-3">
         <div className="flex items-center justify-between text-xs">
           <span className="font-semibold text-stone-800 uppercase tracking-wider text-[11px]">
-            Findings Distribution ({stats.factsCompared} Total Facts)
+            Findings Distribution ({currentStats.factsCompared} Total Facts)
           </span>
           <span className="text-stone-500 font-mono text-[11px]">
             5-Layer Engine Assessment
@@ -175,22 +165,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div
             className="bg-emerald-500 h-full transition-all"
             style={{ width: `${matchPercent}%` }}
-            title={`Consistent with text: ${stats.matches} (${matchPercent}%)`}
+            title={`Consistent with text: ${currentStats.matches} (${matchPercent}%)`}
           />
           <div
             className="bg-amber-400 h-full transition-all"
             style={{ width: `${mismatchPercent}%` }}
-            title={`Possible mismatch detected: ${stats.possibleMismatches} (${mismatchPercent}%)`}
+            title={`Possible mismatch detected: ${currentStats.possibleMismatches} (${mismatchPercent}%)`}
           />
           <div
             className="bg-blue-400 h-full transition-all"
             style={{ width: `${reviewPercent}%` }}
-            title={`Ambiguous evidence: ${stats.reviewRequired} (${reviewPercent}%)`}
+            title={`Ambiguous evidence: ${currentStats.reviewRequired} (${reviewPercent}%)`}
           />
           <div
             className="bg-stone-300 h-full transition-all"
             style={{ width: `${insufficientPercent}%` }}
-            title={`No textual evidence: ${stats.insufficientEvidence} (${insufficientPercent}%)`}
+            title={`No textual evidence: ${currentStats.insufficientEvidence} (${insufficientPercent}%)`}
           />
         </div>
 
@@ -198,22 +188,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
             <span className="text-stone-600">Consistent:</span>
-            <span className="font-semibold text-stone-900">{stats.matches} ({matchPercent}%)</span>
+            <span className="font-semibold text-stone-900">{currentStats.matches} ({matchPercent}%)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
             <span className="text-stone-600">Possible Mismatch:</span>
-            <span className="font-semibold text-stone-900">{stats.possibleMismatches} ({mismatchPercent}%)</span>
+            <span className="font-semibold text-stone-900">{currentStats.possibleMismatches} ({mismatchPercent}%)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-blue-400 shrink-0" />
             <span className="text-stone-600">Ambiguous Evidence:</span>
-            <span className="font-semibold text-stone-900">{stats.reviewRequired} ({reviewPercent}%)</span>
+            <span className="font-semibold text-stone-900">{currentStats.reviewRequired} ({reviewPercent}%)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-stone-300 shrink-0" />
             <span className="text-stone-600">No Evidence in Text:</span>
-            <span className="font-semibold text-stone-900">{stats.insufficientEvidence} ({insufficientPercent}%)</span>
+            <span className="font-semibold text-stone-900">{currentStats.insufficientEvidence} ({insufficientPercent}%)</span>
           </div>
         </div>
       </div>
@@ -236,12 +226,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
 
           <div className="space-y-2.5">
-            {stats.recentFlaggedCases.length === 0 ? (
+            {currentStats.recentFlaggedCases.length === 0 ? (
               <div className="p-6 text-center text-xs text-stone-500 bg-white border border-stone-200 rounded-xl">
                 No active discrepancies flagged in the current dataset.
               </div>
             ) : (
-              stats.recentFlaggedCases.map((item) => (
+              currentStats.recentFlaggedCases.map((item) => (
                 <div
                   key={item.factId}
                   className="p-3.5 bg-white border border-stone-200 hover:border-stone-300 rounded-xl transition-all shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
@@ -299,7 +289,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </div>
 
           <div className="bg-white border border-stone-200 rounded-xl divide-y divide-stone-100 shadow-2xs overflow-hidden">
-            {stats.recentArticles.map((art) => (
+            {currentStats.recentArticles.map((art) => (
               <div
                 key={art.identifier}
                 className="p-3 hover:bg-stone-50/80 transition-colors flex items-center justify-between gap-3"

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ComparisonResult, ComparisonStatus, HumanReviewDecision } from '../types/index.js';
 import { StatusBadge, ReviewBadge } from '../components/StatusBadge.js';
 import { ReviewModal } from '../components/ReviewModal.js';
+import { apiClient } from '../services/apiClient.js';
+import { clientDataService } from '../services/clientDataService.js';
 import {
   ListTodo,
   Filter,
@@ -23,7 +25,8 @@ export const ReviewQueuePage: React.FC<ReviewQueuePageProps> = ({
   onSelectFactForComparison,
   onSaveReview
 }) => {
-  const [items, setItems] = useState<ComparisonResult[]>([]);
+  // Start with instant clientDataService items so the queue is never blank or loading forever
+  const [items, setItems] = useState<ComparisonResult[]>(() => clientDataService.getReviews('ALL', 'ALL').items);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [reviewFilter, setReviewFilter] = useState<string>('ALL');
@@ -31,19 +34,21 @@ export const ReviewQueuePage: React.FC<ReviewQueuePageProps> = ({
   const [selectedResultForReview, setSelectedResultForReview] = useState<ComparisonResult | null>(null);
 
   const fetchItems = () => {
+    // Immediately show filtered local data
+    const local = clientDataService.getReviews(statusFilter, reviewFilter);
+    setItems(local.items);
+
     setLoading(true);
-    let url = `/api/reviews?status=${statusFilter}`;
-    if (reviewFilter !== 'ALL') {
-      url += `&reviewStatus=${reviewFilter}`;
-    }
-    fetch(url)
-      .then(res => res.json())
+    apiClient.getReviews(statusFilter, reviewFilter)
       .then(data => {
-        setItems(data.items || []);
-        setLoading(false);
+        if (data && data.items) {
+          setItems(data.items);
+        }
       })
       .catch(err => {
         console.error('Failed to fetch queue:', err);
+      })
+      .finally(() => {
         setLoading(false);
       });
   };

@@ -3,6 +3,8 @@ import { ComparisonResult, HumanReviewDecision, TextEvidenceCandidate } from '..
 import { StatusBadge, ReviewBadge } from '../components/StatusBadge.js';
 import { EvidenceBridge } from '../components/EvidenceBridge.js';
 import { ReviewModal } from '../components/ReviewModal.js';
+import { apiClient } from '../services/apiClient.js';
+import { clientDataService } from '../services/clientDataService.js';
 import {
   Scale,
   Database,
@@ -41,23 +43,37 @@ export const FactComparisonPage: React.FC<FactComparisonPageProps> = ({
   useEffect(() => {
     if (!articleId) return;
 
+    // Provide instant initial results from clientDataService so UI never flashes blank
+    const instantList = clientDataService.compareArticleFacts(articleId);
+    if (instantList.length > 0) {
+      setAllArticleResults(instantList);
+      const initialMatch = factId
+        ? instantList.find(r => r.factId === factId)
+        : instantList[0];
+      setResult(initialMatch || instantList[0]);
+    }
+
     setLoading(true);
-    fetch(`/api/articles/${articleId}/compare?ai=false`)
-      .then(res => res.json())
+    let isCancelled = false;
+
+    apiClient.compareArticle(articleId, false)
       .then(data => {
-        if (data.results && Array.isArray(data.results)) {
+        if (!isCancelled && data.results && Array.isArray(data.results)) {
           setAllArticleResults(data.results);
           const found = factId
             ? data.results.find((r: ComparisonResult) => r.factId === factId)
             : data.results[0];
           setResult(found || data.results[0] || null);
         }
-        setLoading(false);
       })
       .catch(err => {
         console.error('Failed to load comparison result:', err);
-        setLoading(false);
+      })
+      .finally(() => {
+        if (!isCancelled) setLoading(false);
       });
+
+    return () => { isCancelled = true; };
   }, [articleId, factId]);
 
   const handleSelectFact = (targetFactId: string) => {
@@ -87,16 +103,9 @@ export const FactComparisonPage: React.FC<FactComparisonPageProps> = ({
     if (!result || !articleId) return;
     setAiAnalyzing(true);
     try {
-      const res = await fetch(`/api/articles/${articleId}/compare-fact`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ factId: result.factId, useAI: true })
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setResult(updated);
-        setAllArticleResults(prev => prev.map(item => item.factId === updated.factId ? updated : item));
-      }
+      const updated = await apiClient.compareFact(articleId, result.factId, true);
+      setResult(updated);
+      setAllArticleResults(prev => prev.map(item => item.factId === updated.factId ? updated : item));
     } catch (err) {
       console.error('AI analysis failed:', err);
     } finally {

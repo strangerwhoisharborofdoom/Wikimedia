@@ -16,6 +16,7 @@ import { MobileBottomNav } from './components/MobileBottomNav.js';
 import { OfflineIndicator } from './components/OfflineIndicator.js';
 import { PWAInstallButton } from './components/PWAInstallButton.js';
 import { DashboardStats, HumanReviewDecision } from './types/index.js';
+import { apiClient } from './services/apiClient.js';
 import { Menu, X, Smartphone, Monitor } from 'lucide-react';
 
 export default function App() {
@@ -27,11 +28,10 @@ export default function App() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Load stats from API
+  // Load stats from API or resilient fallback
   const refreshStats = useCallback(async () => {
     try {
-      const res = await fetch('/api/stats');
-      const data = await res.json();
+      const data = await apiClient.getDashboardStats();
       setStats(data);
     } catch (err) {
       console.error('Failed to load stats:', err);
@@ -51,14 +51,7 @@ export default function App() {
     notes: string
   ): Promise<void> => {
     try {
-      const res = await fetch(`/api/reviews/${factId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decision, notes })
-      });
-      if (!res.ok) {
-        throw new Error('Failed to save review determination');
-      }
+      await apiClient.submitReview(factId, decision, notes);
       // Refresh global stats after saving
       await refreshStats();
     } catch (err) {

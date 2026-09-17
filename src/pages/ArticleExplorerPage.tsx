@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArticleOverview, ComparisonResult } from '../types/index.js';
 import { StatusBadge } from '../components/StatusBadge.js';
+import { apiClient } from '../services/apiClient.js';
 import {
   Search,
   ExternalLink,
@@ -40,10 +41,13 @@ export const ArticleExplorerPage: React.FC<ArticleExplorerPageProps> = ({
 
   // Search articles
   useEffect(() => {
-    fetch(`/api/articles/search?q=${encodeURIComponent(searchQuery)}`)
-      .then(res => res.json())
-      .then(data => setSearchResults(data.articles || []))
+    let isCancelled = false;
+    apiClient.searchArticles(searchQuery)
+      .then(list => {
+        if (!isCancelled) setSearchResults(list);
+      })
       .catch(err => console.error('Search failed:', err));
+    return () => { isCancelled = true; };
   }, [searchQuery]);
 
   // Load article details when selectedArticleId changes
@@ -53,36 +57,38 @@ export const ArticleExplorerPage: React.FC<ArticleExplorerPageProps> = ({
       return;
     }
     setMobileViewMode('detail');
+    let isCancelled = false;
 
     setLoadingArticle(true);
-    fetch(`/api/articles/${selectedArticleId}`)
-      .then(res => res.json())
+    apiClient.getArticleOverview(selectedArticleId)
       .then(data => {
-        setArticle(data);
-        setLoadingArticle(false);
+        if (!isCancelled) {
+          setArticle(data);
+          setLoadingArticle(false);
+        }
       })
       .catch(err => {
         console.error('Failed to load article:', err);
-        setLoadingArticle(false);
+        if (!isCancelled) setLoadingArticle(false);
       });
 
     // Also fetch cached or fresh comparisons
-    fetch(`/api/articles/${selectedArticleId}/compare?ai=false`)
-      .then(res => res.json())
+    apiClient.compareArticle(selectedArticleId, false)
       .then(data => {
-        if (data.results) {
+        if (!isCancelled && data.results) {
           setArticleComparisons(data.results);
         }
       })
       .catch(err => console.error('Failed to fetch comparisons:', err));
+
+    return () => { isCancelled = true; };
   }, [selectedArticleId]);
 
   const handleCompareAll = async () => {
     if (!selectedArticleId) return;
     setComparingAll(true);
     try {
-      const res = await fetch(`/api/articles/${selectedArticleId}/compare?ai=true`);
-      const data = await res.json();
+      const data = await apiClient.compareArticle(selectedArticleId, true);
       if (data.results) {
         setArticleComparisons(data.results);
       }
